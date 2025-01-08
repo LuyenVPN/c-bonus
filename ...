@@ -1,0 +1,236 @@
+xóa danh mục và cả sản phẩm trong danh mục
+while (1) {
+                printf("Ban co chac chan muon xoa danh muc nay? (Y/N): ");
+                fgets(reply, sizeof(reply), stdin); 
+                reply[strcspn(reply, "\n")] = '\0'; 
+                if (strcmp(reply, "Y") == 0 || strcmp(reply, "y") == 0) {
+                	for (j = 0; j < productCount; ) {
+                        if (strcmp(menu[j].categoryname, list[i].name) == 0) {
+                        	int k; 
+                            for (k = j; k < productCount - 1; k++) {
+                                menu[k] = menu[k + 1];
+                            }
+                            memset(&menu[productCount - 1], 0, sizeof(Product));
+                            productCount--;
+                        } else {
+                            j++;
+                        }
+                    }
+                    for (j = i; j < count - 1; j++) {
+                        list[j] = list[j + 1];  
+                    }
+                    memset(&list[count - 1], 0, sizeof(Category));  
+					int k; 
+                    for ( k = 0; k < count - 1; k++) {
+                        list[k].id = k + 1; 
+                    }
+                    count--; 
+                    printf("Danh muc da duoc xoa thanh cong!\n");
+                    saveCategoriesToFile();
+                    break;
+                } else if (strcmp(reply, "N") == 0 || strcmp(reply, "n") == 0) {
+                    printf("Da huy thao tac xoa danh muc.\n");
+                    break;
+                } else {
+                    printf("Lua chon khong hop le! Vui long nhap lai (Y/N).\n");
+                }
+            }
+            break;
+        }
+    }
+    if (!found) {
+        printf("ID danh muc khong ton tai!\n"); 
+    }
+}
+
+
+
+void savePasswordToFile(const char *password) {
+    FILE *file = fopen("password.txt", "w");  // Mở file để ghi (w: ghi đè file cũ)
+    if (file == NULL) {
+        printf("Loi khi mo file!\n");
+        return;
+    }
+    fprintf(file, "%s", password);  // Ghi mật khẩu vào file
+    fclose(file);  // Đóng file
+    printf("Mật khẩu đã được lưu vào file.\n");
+}
+
+
+
+tìm kiếm bằng thuật toán nhị phân
+void searchCategoryByName() {
+    if (count == 0) {
+        printf("Danh sach danh muc rong!\n");
+        return;
+    }
+
+    char searchName[20];
+    printf("Nhap ten danh muc muon tim kiem: ");
+    getchar(); // Xóa bộ đệm
+    fgets(searchName, sizeof(searchName), stdin);
+    searchName[strcspn(searchName, "\n")] = '\0'; // Loại bỏ ký tự xuống dòng
+
+    if (strlen(searchName) == 0 || Space(searchName)) {
+        printf("Ten khong hop le. Vui long nhap lai.\n");
+        return;
+    }
+
+    // Sắp xếp danh mục theo tên
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = i + 1; j < count; j++) {
+            if (strcmp(list[i].name, list[j].name) > 0) {
+                Category temp = list[i];
+                list[i] = list[j];
+                list[j] = temp;
+            }
+        }
+    }
+
+    // Tìm kiếm nhị phân
+    int left = 0, right = count - 1, found = 0;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+
+        int cmp = strcmp(list[mid].name, searchName);
+        if (cmp == 0) {
+            // Tìm thấy
+            if (!found) {
+                printf("\nDanh muc tim thay:\n");
+                printf("+-------+---------------------------+\n");
+                printf("| %-5s | %-25s |\n", "ID", "Ten danh muc");
+                printf("+-------+---------------------------+\n");
+            }
+            printf("| %-5d | %-25s |\n", list[mid].id, list[mid].name);
+            found = 1;
+            break;
+        } else if (cmp < 0) {
+            left = mid + 1; // Tìm bên phải
+        } else {
+            right = mid - 1; // Tìm bên trái
+        }
+    }
+
+    if (!found) {
+        printf("\nKhong tim thay danh muc voi ten: \"%s\"\n", searchName);
+    } else {
+        printf("+-------+---------------------------+\n");
+    }
+}
+
+
+sắp xếp theo selectionsort
+void selectionSortCategory() {
+    int i, j, minIdx;
+    Category temp;
+    for (i = 0; i < count - 1; i++) {
+        minIdx = i;
+        for (j = i + 1; j < count; j++) {
+            if (strcmp(list[j].name, list[minIdx].name) < 0) {
+                minIdx = j;
+            }
+        }
+
+        // Swap nếu minIdx khác i
+        if (minIdx != i) {
+            temp = list[i];
+            list[i] = list[minIdx];
+            list[minIdx] = temp;
+        }
+    }
+    // Hiển thị danh sách danh mục sau khi sắp xếp
+    printf("\nDanh sach danh muc sau khi sap xep (A-Z):\n");
+    printf("+-------+---------------------------+\n");
+    printf("| %-5s | %-25s |\n", "ID", "Ten danh muc");
+    printf("+-------+---------------------------+\n");
+    for (i = 0; i < count; i++) {
+        printf("| %-5d | %-25s |\n", list[i].id, list[i].name);
+    }
+    printf("+-------+---------------------------+\n");
+}
+
+tìm kiếm bằng insertionsort
+void insertionSortCategory() {
+    int i, j;
+    Category temp;
+    for (i = 1; i < count; i++) {
+        temp = list[i];
+        j = i - 1;
+
+        // Di chuyển các phần tử của list[0..i-1], lớn hơn temp, sang một vị trí phía sau
+        while (j >= 0 && strcmp(list[j].name, temp.name) > 0) {
+            list[j + 1] = list[j];
+            j--;
+        }
+
+        // Đặt temp vào vị trí đúng
+        list[j + 1] = temp;
+    }
+
+    // Hiển thị danh sách danh mục sau khi sắp xếp
+    printf("\nDanh sach danh muc sau khi sap xep (A-Z):\n");
+    printf("+-------+---------------------------+\n");
+    printf("| %-5s | %-25s |\n", "ID", "Ten danh muc");
+    printf("+-------+---------------------------+\n");
+    for (i = 0; i < count; i++) {
+        printf("| %-5d | %-25s |\n", list[i].id, list[i].name);
+    }
+    printf("+-------+---------------------------+\n");
+}
+
+
+
+tìm lớn thư s2 và nhỏ s2
+void sortCategories(int choice) {
+    int i, j;
+    Category temp;
+    for (i = 0; i < count - 1; i++) {
+        for (j = i + 1; j < count; j++) {
+            int compare = strcmp(list[i].name, list[j].name);
+            if ((choice == 1 && compare > 0) || (choice == 2 && compare < 0)) {
+                temp = list[i];
+                list[i] = list[j];
+                list[j] = temp;
+            }
+        }
+    }
+}
+
+// Hàm tìm danh mục lớn thứ hai và nhỏ thứ hai
+void findSecondLargestAndSecondSmallest() {
+    int choice;
+    
+    // Hỏi người dùng chọn cách sắp xếp danh mục
+    printf("Chon thu tu sap xep danh muc theo ten:\n");
+    printf("1. Sap xep theo ten (A-Z)\n");
+    printf("2. Sap xep theo ten (Z-A)\n");
+    printf("Nhap lua chon (1/2): ");
+    scanf("%d", &choice);
+    getchar();  // Xóa ký tự newline
+
+    if (choice != 1 && choice != 2) {
+        printf("Lua chon khong hop le!\n");
+        return;
+    }
+
+    sortCategories(choice);  // Gọi hàm sắp xếp theo lựa chọn
+
+    // Tìm danh mục lớn thứ hai và nhỏ thứ hai
+    if (count >= 2) {
+        if (choice == 1) { // A-Z
+            printf("\nDanh muc lon thu hai (A-Z):\n");
+            printf("ID: %-5d | Ten danh muc: %-25s\n", list[1].id, list[1].name);  // Danh mục lớn thứ hai
+
+            printf("\nDanh muc nho thu hai (A-Z):\n");
+            printf("ID: %-5d | Ten danh muc: %-25s\n", list[count - 2].id, list[count - 2].name);  // Danh mục nhỏ thứ hai
+        } else if (choice == 2) { // Z-A
+            printf("\nDanh muc lon thu hai (Z-A):\n");
+            printf("ID: %-5d | Ten danh muc: %-25s\n", list[count - 2].id, list[count - 2].name);  // Danh mục lớn thứ hai
+
+            printf("\nDanh muc nho thu hai (Z-A):\n");
+            printf("ID: %-5d | Ten danh muc: %-25s\n", list[1].id, list[1].name);  // Danh mục nhỏ thứ hai
+        }
+    } else {
+        printf("Danh sach danh muc qua it, khong co du lieu de tim danh muc lon thu 2 va nho thu 2.\n");
+    }
+}
